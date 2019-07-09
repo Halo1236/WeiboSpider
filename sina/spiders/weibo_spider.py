@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
+import datetime
 import re
 from lxml import etree
 from scrapy import Spider
@@ -27,7 +28,8 @@ class WeiboSpider(Spider):
     def parse_information(self, response):
         """ 抓取个人信息 """
         information_item = InformationItem()
-        information_item['crawl_time'] = int(time.time())
+        now_time = datetime.datetime.now()
+        information_item['crawl_time'] = now_time.strftime('%Y-%m-%d %H:%M:%S')
         selector = Selector(response)
         information_item['_id'] = re.findall('(\d+)/info', response.url)[0]
         text1 = ";".join(selector.xpath('body/div[@class="c"]//text()').extract())  # 获取标签里的所有text()
@@ -92,14 +94,14 @@ class WeiboSpider(Spider):
                       callback=self.parse_tweet,
                       priority=1)
 
-        # 获取关注列表
-        yield Request(url=self.base_url + '/{}/follow?page=1'.format(information_item['_id']),
-                      callback=self.parse_follow,
-                      dont_filter=True)
-        # 获取粉丝列表
-        yield Request(url=self.base_url + '/{}/fans?page=1'.format(information_item['_id']),
-                      callback=self.parse_fans,
-                      dont_filter=True)
+        # # 获取关注列表
+        # yield Request(url=self.base_url + '/{}/follow?page=1'.format(information_item['_id']),
+        #               callback=self.parse_follow,
+        #               dont_filter=True)
+        # # 获取粉丝列表
+        # yield Request(url=self.base_url + '/{}/fans?page=1'.format(information_item['_id']),
+        #               callback=self.parse_fans,
+        #               dont_filter=True)
 
     def parse_tweet(self, response):
         if response.url.endswith('page=1'):
@@ -177,8 +179,8 @@ class WeiboSpider(Spider):
                     yield tweet_item
 
                 # 抓取该微博的评论信息
-                comment_url = self.base_url + '/comment/' + tweet_item['weibo_url'].split('/')[-1] + '?page=1'
-                yield Request(url=comment_url, callback=self.parse_comment, meta={'weibo_url': tweet_item['weibo_url']})
+                # comment_url = self.base_url + '/comment/' + tweet_item['weibo_url'].split('/')[-1] + '?page=1'
+                # yield Request(url=comment_url, callback=self.parse_comment, meta={'weibo_url': tweet_item['weibo_url']})
 
             except Exception as e:
                 self.logger.error(e)

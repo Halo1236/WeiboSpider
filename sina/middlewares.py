@@ -2,6 +2,8 @@
 import random
 
 import pymongo
+import requests
+
 from sina.settings import LOCAL_MONGO_PORT, LOCAL_MONGO_HOST, DB_NAME
 
 
@@ -38,26 +40,33 @@ class RedirectMiddleware(object):
     def process_response(self, request, response, spider):
         http_code = response.status
         if http_code == 302 or http_code == 403:
+            spider.logger.debug('http_code:' + http_code)
             self.account_collection.find_one_and_update({'_id': request.meta['account']['_id']},
                                                         {'$set': {'status': 'error'}}, )
             return request
         elif http_code == 418:
             spider.logger.error('ip 被封了!!!请更换ip,或者停止程序...')
+            self.delete_proxy(request.meta['proxy'])
             return request
         else:
             return response
 
+    def delete_proxy(self, proxy):
+        requests.get("http://172.16.1.65:5010/delete/?proxy={}".format(proxy))
+
 
 class IPProxyMiddleware(object):
 
-    def fetch_proxy(self):
-        # 如果需要加入代理IP，请重写这个函数
-        # 这个函数返回一个代理ip，'ip:port'的格式，如'12.34.1.4:9090'
-        return None
+    def get_proxy(self):
+        """
+        'ip:port'的格式，如'12.34.1.4:9090'
+        :return:
+        """
+        return requests.get("http://172.16.1.65:5010/get/").text
 
     def process_request(self, request, spider):
-        proxy_data = self.fetch_proxy()
+        proxy_data = self.get_proxy()
         if proxy_data:
-            current_proxy = f'http://{proxy_data}'
+            current_proxy = 'http://' + proxy_data
             spider.logger.debug(f"当前代理IP:{current_proxy}")
             request.meta['proxy'] = current_proxy
