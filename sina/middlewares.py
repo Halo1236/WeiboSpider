@@ -1,10 +1,12 @@
 # encoding: utf-8
+import base64
 import random
 
 import pymongo
 import requests
 
 from sina.settings import LOCAL_MONGO_PORT, LOCAL_MONGO_HOST, DB_NAME
+from sina.settings import USER_AGENTS
 
 
 class CookieMiddleware(object):
@@ -46,16 +48,21 @@ class RedirectMiddleware(object):
             return request
         elif http_code == 418:
             spider.logger.error('ip 被封了!!!请更换ip,或者停止程序...')
-            self.delete_proxy(request.meta['proxy'])
+            # self.delete_proxy(request.meta['proxy'])
             return request
         else:
             return response
 
-    def delete_proxy(self, proxy):
-        requests.get("http://172.16.1.65:5010/delete/?proxy={}".format(proxy))
+    # def delete_proxy(self, proxy):
+    #     requests.get("http://172.16.1.65:5010/delete/?proxy={}".format(proxy))
 
 
 class IPProxyMiddleware(object):
+    proxyServer = "http://http-dyn.abuyun.com:9020"
+    proxyUser = "HT76T91AE8E71S4D"
+    proxyPass = "F838D5FDB026B6B4"
+    # 代理隧道验证信息
+    proxyAuth = "Basic " + base64.urlsafe_b64encode(bytes((proxyUser + ":" + proxyPass), "ascii")).decode("utf8")
 
     def get_proxy(self):
         """
@@ -65,8 +72,13 @@ class IPProxyMiddleware(object):
         return requests.get("http://172.16.1.65:5010/get/").text
 
     def process_request(self, request, spider):
-        proxy_data = self.get_proxy()
-        if proxy_data:
-            current_proxy = 'http://' + proxy_data
-            spider.logger.debug(f"当前代理IP:{current_proxy}")
-            request.meta['proxy'] = current_proxy
+        # proxy_data = self.get_proxy()
+        # if proxy_data:
+        # current_proxy = 'http://' + proxy_data
+        # spider.logger.debug(f"当前代理IP:{current_proxy}")
+        # request.meta['proxy'] = current_proxy
+
+        # user_agents = random.choice(USER_AGENTS)
+        # request.headers.setdefault('User-Agent', user_agents)
+        request.meta["proxy"] = self.proxyServer
+        request.headers["Proxy-Authorization"] = self.proxyAuth

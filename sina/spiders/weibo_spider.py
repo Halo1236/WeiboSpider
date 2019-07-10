@@ -19,10 +19,28 @@ class WeiboSpider(Spider):
 
     def start_requests(self):
         start_uids = [
-            '2803301701',  # 人民日报
-            '1699432410'  # 新华社
+            '2489610225',  # 天津发布
+            '3163782211',  # 平安天津
+            '5018637328',  # 天津交警
+            '2085794347',  # 天津高速公路
+            '2358203003',  # 天津天气
+            '5582151150',  # 天津8890
+            '2490830195',  # 天津地铁运营
+            '3156358147',  # 天津气象
+            '3009277592',  # 天津轨道交通
+            '2085621483',  # 天津消防
+            '3250739191',  # 天津生态环境
+            '2321517984',  # 天津有线
+            '3286928372',  # 天津人力社保
+            '1274689160',  # 平安天津港
+            '3316876605',  # 天津南开消防
+            '1986142787',  # 天津高新区THT
+            '2323162571',  # 天津博物馆
+            '3142524405',  # 天津公交天天服务
+            '1414521997',  # 天津出入境
+            '3888882491',  # 天津西青
         ]
-        for uid in start_uids:
+        for uid in reversed(start_uids):
             yield Request(url="https://weibo.cn/%s/info" % uid, callback=self.parse_information)
 
     def parse_information(self, response):
@@ -91,8 +109,7 @@ class WeiboSpider(Spider):
 
         # 获取该用户微博
         yield Request(url=self.base_url + '/{}/profile?page=1'.format(information_item['_id']),
-                      callback=self.parse_tweet,
-                      priority=1)
+                      callback=self.parse_tweet, meta=information_item, priority=1)
 
         # # 获取关注列表
         # yield Request(url=self.base_url + '/{}/follow?page=1'.format(information_item['_id']),
@@ -104,12 +121,15 @@ class WeiboSpider(Spider):
         #               dont_filter=True)
 
     def parse_tweet(self, response):
+        information_item = response.meta
         if response.url.endswith('page=1'):
             # 如果是第1页，一次性获取后面的所有页
             all_page = re.search(r'/>&nbsp;1/(\d+)页</div>', response.text)
             if all_page:
                 all_page = all_page.group(1)
                 all_page = int(all_page)
+                if all_page > 100:
+                    all_page = 100
                 for page_num in range(2, all_page + 1):
                     page_url = response.url.replace('page=1', 'page={}'.format(page_num))
                     yield Request(page_url, self.parse_tweet, dont_filter=True, meta=response.meta)
@@ -121,7 +141,9 @@ class WeiboSpider(Spider):
         for tweet_node in tweet_nodes:
             try:
                 tweet_item = TweetsItem()
-                tweet_item['crawl_time'] = int(time.time())
+                tweet_item['nick_name'] = information_item["nick_name"]
+                now_time = datetime.datetime.now()
+                tweet_item['crawl_time'] = now_time.strftime('%Y-%m-%d %H:%M:%S')
                 tweet_repost_url = tweet_node.xpath('.//a[contains(text(),"转发[")]/@href')[0]
                 user_tweet_id = re.search(r'/repost/(.*?)\?uid=(\d+)', tweet_repost_url)
                 tweet_item['weibo_url'] = 'https://weibo.com/{}/{}'.format(user_tweet_id.group(2),
