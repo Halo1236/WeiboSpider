@@ -610,7 +610,8 @@ class WeiboSpider(Spider):
         for tweet_node in tweet_nodes:
             try:
                 tweet_item = TweetsItem()
-                tweet_item['nick_name'] = information_item["nick_name"]
+                if information_item["nick_name"]:
+                    tweet_item['nick_name'] = information_item["nick_name"]
                 now_time = datetime.datetime.now()
                 tweet_item['crawl_time'] = now_time.strftime('%Y-%m-%d %H:%M:%S')
                 tweet_repost_url = tweet_node.xpath('.//a[contains(text(),"转发[")]/@href')[0]

@@ -4,10 +4,42 @@ import random
 
 import pymongo
 import requests
+from scrapy import signals
+from twisted.internet import task
 
 from sina.settings import LOCAL_MONGO_PORT, LOCAL_MONGO_HOST, DB_NAME
 from sina.settings import USER_AGENTS
 
+
+class SpeedMiddleware(object):
+    def __init__(self, stats):
+        self.stats = stats
+        # 每隔多少秒监控一次已抓取数量
+        self.time = 10.0
+
+    @classmethod
+    def from_crawler(cls, crawler, *args, **kwargs):
+        instance = cls(crawler.stats)
+        crawler.signals.connect(instance.spider_opened, signal=signals.spider_opened)
+        crawler.signals.connect(instance.spider_closed, signal=signals.spider_closed)
+        return instance
+
+    def spider_opened(self):
+        self.tsk = task.LoopingCall(self.collect)
+        self.tsk.start(self.time, now=True)
+
+    def spider_closed(self):
+        scrapy_count = self.stats.get_value('item_scraped_count')
+        print(scrapy_count)
+        if self.tsk.running:
+            self.tsk.stop()
+
+    def collect(self):
+        # 这里收集stats并写入相关的储存。
+        # 目前展示是输出到终端
+        scrapy_count = self.stats.get_value('item_scraped_count')
+        if scrapy_count:
+            print(scrapy_count)
 
 class CookieMiddleware(object):
     """
@@ -42,7 +74,7 @@ class RedirectMiddleware(object):
     def process_response(self, request, response, spider):
         http_code = response.status
         if http_code == 302 or http_code == 403:
-            spider.logger.debug('http_code:' + http_code)
+            spider.logger.debug('http_code:%s' % http_code)
             self.account_collection.find_one_and_update({'_id': request.meta['account']['_id']},
                                                         {'$set': {'status': 'error'}}, )
             return request
@@ -59,8 +91,8 @@ class RedirectMiddleware(object):
 
 class IPProxyMiddleware(object):
     proxyServer = "http://http-dyn.abuyun.com:9020"
-    proxyUser = "HT76T91AE8E71S4D"
-    proxyPass = "F838D5FDB026B6B4"
+    proxyUser = "H80Y6E38XC1M20XD"
+    proxyPass = "B8AFEE45CF44DDB2"
     # 代理隧道验证信息
     proxyAuth = "Basic " + base64.urlsafe_b64encode(bytes((proxyUser + ":" + proxyPass), "ascii")).decode("utf8")
 
@@ -78,7 +110,7 @@ class IPProxyMiddleware(object):
         # spider.logger.debug(f"当前代理IP:{current_proxy}")
         # request.meta['proxy'] = current_proxy
 
-        # user_agents = random.choice(USER_AGENTS)
-        # request.headers.setdefault('User-Agent', user_agents)
+        user_agents = random.choice(USER_AGENTS)
+        request.headers.setdefault('User-Agent', user_agents)
         request.meta["proxy"] = self.proxyServer
         request.headers["Proxy-Authorization"] = self.proxyAuth

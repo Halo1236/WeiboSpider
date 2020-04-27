@@ -15,9 +15,8 @@ TEMPLATES_FOLDER = os.getcwd() + '/sina/account_build/templates/'
 
 class WeiboLogin():
     def __init__(self, username, password):
-        os.system('pkill -f phantom')
         self.url = 'https://passport.weibo.cn/signin/login?entry=mweibo&r=https://weibo.cn/'
-        self.browser = webdriver.PhantomJS()
+        self.browser = webdriver.Chrome()
         self.browser.set_window_size(1050, 840)
         self.wait = WebDriverWait(self.browser, 20)
         self.username = username
@@ -43,7 +42,7 @@ class WeiboLogin():
         """
         self.open()
         WebDriverWait(self.browser, 30).until(
-            EC.title_is('我的首页')
+            EC.title_is('微博')
         )
         cookies = self.browser.get_cookies()
         cookie = [item["name"] + "=" + item["value"] for item in cookies]
@@ -55,7 +54,7 @@ class WeiboLogin():
 if __name__ == '__main__':
     # 在目录中新建一个account.txt文件，格式需要与account_sample.txt相同
     # 其实就是把www.xiaohao.shop买的账号复制到新建的account.txt文件中
-    file_path = os.getcwd() + '/sina/account_build/account.txt'
+    file_path = os.getcwd() + '\\account.txt'
     with open(file_path, 'r') as f:
         lines = f.readlines()
     mongo_client = pymongo.MongoClient(LOCAL_MONGO_HOST, LOCAL_MONGO_PORT)

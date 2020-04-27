@@ -17,15 +17,16 @@ CONCURRENT_REQUESTS = 8
 
 AUTOTHROTTLE_ENABLED = True
 AUTOTHROTTLE_START_DELAY = 0.2  # 初始下载延迟
-DOWNLOAD_DELAY = 3  # 每次请求间隔时间
+DOWNLOAD_DELAY = 0.8  # 每次请求间隔时间
 
 DOWNLOADER_MIDDLEWARES = {
     'weibo.middlewares.UserAgentMiddleware': None,
     'scrapy.downloadermiddlewares.cookies.CookiesMiddleware': None,
     'scrapy.downloadermiddlewares.redirect.RedirectMiddleware': None,
+    'sina.middlewares.SpeedMiddleware': 301,
     'sina.middlewares.CookieMiddleware': 300,
     'sina.middlewares.RedirectMiddleware': 200,
-    # 'sina.middlewares.IPProxyMiddleware': 100,
+    'sina.middlewares.IPProxyMiddleware': 100,
     'scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware': 101,
 }
 
@@ -39,11 +40,9 @@ LOCAL_MONGO_HOST = '127.0.0.1'
 LOCAL_MONGO_PORT = 27017
 DB_NAME = 'SinaSpider'
 
-
 # IP
 DOWNLOAD_TIMEOUT = 10
 RETRY_TIMES = 15
-
 
 USER_AGENTS = [
     "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; AcooBrowser; .NET CLR 1.1.4322; .NET CLR 2.0.50727)",
@@ -63,3 +62,10 @@ USER_AGENTS = [
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_3) AppleWebKit/535.20 (KHTML, like Gecko) Chrome/19.0.1036.7 Safari/535.20",
     "Opera/9.80 (Macintosh; Intel Mac OS X 10.6.8; U; fr) Presto/2.9.168 Version/11.52",
 ]
+
+# 散列函数的个数，默认为6，可以自行修改
+BLOOMFILTER_HASH_NUMBER_URL = 6
+# Bloom Filter的bit参数，默认30，占用128MB空间，去重量级1亿
+BLOOMFILTER_BIT_URL = 30
+# redis连接方式
+REDIS_URL = 'redis://user:password@host:port/0'
