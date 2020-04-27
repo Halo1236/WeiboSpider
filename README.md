@@ -1,6 +1,6 @@
 # WeiboSpider
 
-感谢项目 https://github.com/nghuyong/WeiboSpider,本项目在此之上修改
+感谢项目 https://github.com/nghuyong/WeiboSpider 本项目在此之上修改
 
 This is a sina weibo spider built by scrapy
 
